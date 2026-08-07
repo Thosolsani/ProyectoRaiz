@@ -1,0 +1,19 @@
+import 'package:flutter/material.dart';
+import 'pages/home_page.dart';
+
+void main() {
+  runApp(const ProyectoRaizApp());
+}
+
+class ProyectoRaizApp extends StatelessWidget {
+  const ProyectoRaizApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Proyecto Raíz',
+      home: const HomePage(),
+    );
+  }
+}
