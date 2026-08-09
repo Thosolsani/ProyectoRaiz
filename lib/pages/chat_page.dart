@@ -30,15 +30,13 @@ class _ChatPageState extends State<ChatPage> {
     ),
   ];
 
-  void enviarMensaje() {
+  Future<void> enviarMensaje() async {
     final texto = mensajeController.text.trim();
 
     if (texto.isEmpty) return;
 
-    // Oculta el teclado.
     FocusScope.of(context).unfocus();
 
-    // Agrega el mensaje del usuario.
     setState(() {
       mensajes.add(
         Message(
@@ -50,10 +48,21 @@ class _ChatPageState extends State<ChatPage> {
 
     mensajeController.clear();
 
-    // Obtiene la respuesta del ChatService.
-    final respuesta = chatService.responder(texto);
+    await desplazarAlFinal();
 
-    // Agrega la respuesta del asistente.
+    // Construimos el historial de la conversación.
+    final List<String> historial = mensajes
+        .map((mensaje) => mensaje.text)
+        .toList();
+
+    // Pedimos una respuesta al ChatService.
+    final String respuesta = await chatService.responder(
+      mensaje: texto,
+      historial: historial,
+    );
+
+    if (!mounted) return;
+
     setState(() {
       mensajes.add(
         Message(
@@ -63,18 +72,23 @@ class _ChatPageState extends State<ChatPage> {
       );
     });
 
-    // Desplaza automáticamente el chat hacia abajo.
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (!mounted) return;
+    await desplazarAlFinal();
+  }
 
-      if (scrollController.hasClients) {
-        scrollController.animateTo(
-          scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+  Future<void> desplazarAlFinal() async {
+    await Future.delayed(
+      const Duration(milliseconds: 100),
+    );
+
+    if (!mounted) return;
+
+    if (scrollController.hasClients) {
+      await scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -92,7 +106,6 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-
       body: Column(
         children: [
           Expanded(
@@ -100,7 +113,6 @@ class _ChatPageState extends State<ChatPage> {
               controller: scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: mensajes.length,
-
               itemBuilder: (context, index) {
                 final Message mensaje = mensajes[index];
                 final bool esUsuario = mensaje.isUser;
@@ -109,34 +121,26 @@ class _ChatPageState extends State<ChatPage> {
                   alignment: esUsuario
                       ? Alignment.centerRight
                       : Alignment.centerLeft,
-
                   child: Container(
                     constraints: const BoxConstraints(
                       maxWidth: 280,
                     ),
-
                     margin: const EdgeInsets.symmetric(
                       vertical: 6,
                     ),
-
                     padding: const EdgeInsets.all(14),
-
                     decoration: BoxDecoration(
                       color: esUsuario
                           ? Colors.green
                           : Colors.green.shade50,
-
                       borderRadius: BorderRadius.circular(18),
                     ),
-
                     child: Text(
                       mensaje.text,
-
                       style: TextStyle(
                         color: esUsuario
                             ? Colors.white
                             : Colors.black87,
-
                         fontSize: 17,
                       ),
                     ),
@@ -149,20 +153,15 @@ class _ChatPageState extends State<ChatPage> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(12),
-
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: mensajeController,
-
                       textInputAction: TextInputAction.send,
-
                       onSubmitted: (_) => enviarMensaje(),
-
                       decoration: InputDecoration(
                         hintText: "Escribe un mensaje...",
-
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -175,10 +174,8 @@ class _ChatPageState extends State<ChatPage> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.green,
-
                     child: IconButton(
                       onPressed: enviarMensaje,
-
                       icon: const Icon(
                         Icons.send,
                         color: Colors.white,
