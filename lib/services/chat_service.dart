@@ -1,5 +1,7 @@
+
 import '../config/app_config.dart';
 import '../interfaces/ai_service.dart';
+import '../models/message.dart';
 import 'local_ai_service.dart';
 import 'remote_ai_service.dart';
 
@@ -20,7 +22,7 @@ class ChatService {
 
   Future<String> responder({
     required String mensaje,
-    required List<String> historial,
+    required List<Message> historial,
   }) {
     return aiService.enviarMensaje(
       mensaje: mensaje,

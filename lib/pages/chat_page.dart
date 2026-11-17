@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+
 import '../models/message.dart';
 import '../services/chat_service.dart';
 
@@ -10,33 +12,41 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final TextEditingController mensajeController = TextEditingController();
-  final ScrollController scrollController = ScrollController();
+  final TextEditingController mensajeController =
+      TextEditingController();
+
+  final ScrollController scrollController =
+      ScrollController();
 
   final ChatService chatService = ChatService();
 
   final List<Message> mensajes = [
     Message(
-      text: "🌿 Hola, soy Proyecto Raíz.",
+      text: '🌿 Hola, soy Raíz.',
       isUser: false,
     ),
     Message(
-      text: "Me alegra que estés aquí.",
+      text: 'Me alegra que estés aquí.',
       isUser: false,
     ),
     Message(
-      text: "¿Cómo te sientes hoy?",
+      text: '¿Cómo te sientes hoy?',
       isUser: false,
     ),
   ];
 
+  bool procesandoMensaje = false;
+
   Future<void> enviarMensaje() async {
+    if (procesandoMensaje) return;
+
     final texto = mensajeController.text.trim();
 
     if (texto.isEmpty) return;
 
     FocusScope.of(context).unfocus();
 
+    // Guardamos el mensaje del usuario.
     setState(() {
       mensajes.add(
         Message(
@@ -44,35 +54,61 @@ class _ChatPageState extends State<ChatPage> {
           isUser: true,
         ),
       );
+
+      procesandoMensaje = true;
     });
 
     mensajeController.clear();
 
     await desplazarAlFinal();
 
-    // Construimos el historial de la conversación.
-    final List<String> historial = mensajes
-        .map((mensaje) => mensaje.text)
-        .toList();
+    try {
+      // Enviamos el historial con roles user y assistant.
+      // Excluimos el mensaje actual porque se envía
+      // por separado mediante el parámetro mensaje.
+      final List<Message> historial = mensajes
+          .take(mensajes.length - 1)
+          .toList();
 
-    // Pedimos una respuesta al ChatService.
-    final String respuesta = await chatService.responder(
-      mensaje: texto,
-      historial: historial,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      mensajes.add(
-        Message(
-          text: respuesta,
-          isUser: false,
-        ),
+      final String respuesta =
+          await chatService.responder(
+        mensaje: texto,
+        historial: historial,
       );
-    });
 
-    await desplazarAlFinal();
+      if (!mounted) return;
+
+      setState(() {
+        mensajes.add(
+          Message(
+            text: respuesta,
+            isUser: false,
+          ),
+        );
+      });
+
+      await desplazarAlFinal();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        mensajes.add(
+          const Message(
+            text: 'No pude responder en este momento. '
+                'Podemos intentarlo nuevamente.',
+            isUser: false,
+          ),
+        );
+      });
+
+      debugPrint('Error al enviar mensaje: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          procesandoMensaje = false;
+        });
+      }
+    }
   }
 
   Future<void> desplazarAlFinal() async {
@@ -102,7 +138,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Asistente IA"),
+        title: const Text('Raíz'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
@@ -133,7 +169,8 @@ class _ChatPageState extends State<ChatPage> {
                       color: esUsuario
                           ? Colors.green
                           : Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius:
+                          BorderRadius.circular(18),
                     ),
                     child: Text(
                       mensaje.text,
@@ -150,6 +187,17 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
 
+          if (procesandoMensaje)
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Text(
+                'Raíz está aquí...',
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -161,9 +209,10 @@ class _ChatPageState extends State<ChatPage> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => enviarMensaje(),
                       decoration: InputDecoration(
-                        hintText: "Escribe un mensaje...",
+                        hintText: 'Escribe un mensaje...',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius:
+                              BorderRadius.circular(20),
                         ),
                       ),
                     ),
@@ -175,7 +224,9 @@ class _ChatPageState extends State<ChatPage> {
                     radius: 24,
                     backgroundColor: Colors.green,
                     child: IconButton(
-                      onPressed: enviarMensaje,
+                      onPressed: procesandoMensaje
+                          ? null
+                          : enviarMensaje,
                       icon: const Icon(
                         Icons.send,
                         color: Colors.white,

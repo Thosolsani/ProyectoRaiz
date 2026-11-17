@@ -1,17 +1,21 @@
+
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../interfaces/ai_service.dart';
+import '../models/message.dart';
 
 class RemoteAIService implements AIService {
   @override
   Future<String> enviarMensaje({
     required String mensaje,
-    required List<String> historial,
+    required List<Message> historial,
   }) async {
-    final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/chat');
+    final uri = Uri.parse(
+      '${AppConfig.apiBaseUrl}/api/chat',
+    );
 
     final response = await http.post(
       uri,
@@ -20,7 +24,9 @@ class RemoteAIService implements AIService {
       },
       body: jsonEncode({
         'mensaje': mensaje,
-        'historial': historial,
+        'historial': historial
+            .map((item) => item.toJson())
+            .toList(),
       }),
     );
 
